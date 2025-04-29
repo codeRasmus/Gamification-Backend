@@ -11,13 +11,16 @@ exports.getTaskById = async (req, res) => {
 };
 
 exports.createTask = async (req, res) => {
+  console.log(req.body);
   const task = new Task(req.body);
   await task.save();
   res.status(201).json(task);
 };
 
 exports.updateTask = async (req, res) => {
-  const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const task = await Task.findByIdAndUpdate(req.params.id, req.body, {
+    new: true,
+  });
   res.json(task);
 };
 
