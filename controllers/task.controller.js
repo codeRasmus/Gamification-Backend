@@ -2,6 +2,7 @@ const Task = require("../models/task.model");
 
 exports.getAllTasks = async (req, res) => {
   const tasks = await Task.find();
+  console.log(tasks);
   res.json(tasks);
 };
 
@@ -18,10 +19,27 @@ exports.createTask = async (req, res) => {
 };
 
 exports.updateTask = async (req, res) => {
-  const task = await Task.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-  });
-  res.json(task);
+  const { id } = req.params; // Get the ID from the URL
+  const updates = { ...req.body }; // Copy the request body to handle it more explicitly
+
+  // Optional: Ensure that the ID is not in the request body
+  delete updates._id;
+
+  try {
+    // Perform the update
+    const task = await Task.findByIdAndUpdate(id, updates, {
+      new: true, // Return the updated task
+    });
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    res.json(task); // Send the updated task back
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating task" });
+  }
 };
 
 exports.deleteTask = async (req, res) => {
