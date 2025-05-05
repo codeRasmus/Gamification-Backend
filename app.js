@@ -1,5 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 const taskRoutes = require("./routes/task.routes");
 const cors = require("cors");
 // const teamRoutes = require("./routes/team.routes");
@@ -15,11 +16,14 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }));
 
+// Route setup
 app.use("/api/tasks", taskRoutes);
 // app.use("/api/teams", teamRoutes);
 app.use("/api/admin", adminRoutes);
 
+// MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
