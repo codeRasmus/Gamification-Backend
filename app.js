@@ -1,12 +1,20 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const taskRoutes = require("./routes/task.routes");
+const cors = require("cors");
 // const teamRoutes = require("./routes/team.routes");
 const adminRoutes = require("./routes/admin.routes");
 require("dotenv").config();
 
 const app = express();
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/tasks", taskRoutes);
 // app.use("/api/teams", teamRoutes);
