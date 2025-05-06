@@ -2,21 +2,16 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const http = require("http");
-const { Server } = require("socket.io");
+const socket = require("./socket"); // ✅ import your socket module
 const taskRoutes = require("./routes/task.routes");
 const adminRoutes = require("./routes/admin.routes");
 require("dotenv").config();
 
-const kode = 123456;
-
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173",
-    credentials: true,
-  },
-});
+const io = socket.init(server); // ✅ initialize and get io instance
+
+let kode = 1;
 
 // Middleware for CORS og JSON parsing
 app.use(
@@ -28,20 +23,22 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Ruter
+// Routes
 app.use("/api/tasks", taskRoutes);
 app.use("/api/admin", adminRoutes);
 
 const VALID_TEAMS = ["Alpha", "Beta", "Delta", "Sigma", "Omega"];
 const connectedTeams = {}; // { teamName: socketId }
 
-// Aktuel liste over tilsluttede teams
 const getConnectedTeamsList = () => {
   return Object.keys(connectedTeams).join(", ");
 };
 
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
+  socket.on("game_start", () => {
+    console.log("Game started");
+  });
 
   socket.on("join-team", ({ teamName, sessionId }) => {
     if (!VALID_TEAMS.includes(teamName)) {
@@ -75,13 +72,7 @@ io.on("connection", (socket) => {
   });
 });
 
-function startGame() {
-  io.emit("game_start", {
-    message: "Game is starting! Please go to the game page.",
-  });
-}
-
-// MongoDB-forbindelse og server start
+// MongoDB connection and server start
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
