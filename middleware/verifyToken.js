@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-export function verifyToken(req, res, next) {
+function verifyToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
@@ -16,3 +16,5 @@ export function verifyToken(req, res, next) {
     return res.status(403).json({ message: "Invalid Token" });
   }
 }
+
+module.exports = verifyToken;

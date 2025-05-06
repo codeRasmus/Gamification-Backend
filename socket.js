@@ -1,5 +1,4 @@
-// socket.js
-let io; // Denne variable holder io-instansen
+let io;
 
 module.exports = {
   init: (server) => {
