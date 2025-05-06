@@ -21,6 +21,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(express.text({ type: "text/csv" }));
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
@@ -100,7 +101,9 @@ io.on("connection", (socket) => {
         io.to(socketId).emit("receive-task", randomTask);
       }
 
-      console.log(`Spillet er startet i session ${sessionId} med ${tasks.length} opgaver`);
+      console.log(
+        `Spillet er startet i session ${sessionId} med ${tasks.length} opgaver`
+      );
     } catch (err) {
       console.error("Fejl i start-game:", err);
       socket.emit("error", "Kunne ikke starte spillet");
