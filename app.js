@@ -63,11 +63,7 @@ io.on("connection", (socket) => {
       delete connectedTeams[teamName];
 
       const updatedList = getConnectedTeamsList();
-      console.log(
-        updatedList
-          ? `Nu er ${updatedList} tilsluttet.`
-          : "Ingen teams er tilsluttet."
-      );
+      console.log(updatedList ? `Nu er ${updatedList} tilsluttet.` : "Ingen teams er tilsluttet.");
     });
   });
 });
