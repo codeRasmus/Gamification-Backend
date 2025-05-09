@@ -19,7 +19,7 @@ exports.createTask = async (req, res) => {
 
 exports.uploadTasks = async (req, res) => {
   try {
-    const tasks = req.jsonData; // Use req.csvData here, not req.body
+    const tasks = req.csvData;
     console.log("Parsed tasks:", tasks); // Debugging log
 
     if (
