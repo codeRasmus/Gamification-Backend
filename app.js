@@ -6,8 +6,9 @@ const socket = require("./socket");
 const taskRoutes = require("./routes/task.routes");
 const adminRoutes = require("./routes/admin.routes");
 const submissionRoutes = require("./routes/submission.routes");
-require("dotenv").config();
 const Task = require("./models/task.model");
+const game = require("./utils/gameSessionManager");
+require("dotenv").config();
 
 const app = express();
 const server = http.createServer(app);
@@ -27,162 +28,100 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/submission", submissionRoutes);
 
 const VALID_TEAMS = ["Alpha", "Beta", "Delta", "Sigma", "Omega"];
-const sessions = {};
 
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
-  // Game Start
-  socket.on("game_start", () => {
-    console.log("Game started");
-  });
-  // Join Team
+
+  // Join team
   socket.on("join-team", ({ teamName, sessionId }) => {
     if (!VALID_TEAMS.includes(teamName)) {
-      socket.emit("error", "Ugyldigt holdnavn");
-      return;
-    }
-    if (!sessions[sessionId]) {
-      sessions[sessionId] = {};
+      return socket.emit("error", "Ugyldigt holdnavn");
     }
 
-    const teamSlots = sessions[sessionId];
-    if (teamSlots[teamName]) {
-      socket.emit("error", `Holdet ${teamName} er allerede optaget.`);
-      return;
+    const joined = game.joinTeam(sessionId, teamName, socket.id);
+    if (!joined) {
+      return socket.emit("error", `Holdet ${teamName} er allerede optaget.`);
     }
-    teamSlots[teamName] = {
-      socketId: socket.id,
-      task: null,
-    };
 
     socket.join(sessionId);
     socket.join(teamName);
-
     socket.emit("joined", { teamName, sessionId });
-    console.log(`Team ${teamName} joined in session ${sessionId}`);
 
-    io.to(sessionId).emit("team-update", teamSlots);
+    console.log(`✅ Team ${teamName} joined session ${sessionId} via socket ${socket.id}`);
+    io.to(sessionId).emit("team-update", game.getSession(sessionId).teams);
 
-    // Disconnect Event
     socket.on("disconnect", () => {
-      console.log(`Socket ${socket.id} disconnected from team ${teamName}`);
-
-      if (
-        sessions[sessionId] &&
-        sessions[sessionId][teamName]?.socketId === socket.id
-      ) {
-        delete sessions[sessionId][teamName];
-        if (Object.keys(sessions[sessionId]).length === 0) {
-          delete sessions[sessionId];
-        }
-      }
+      console.log(`Socket ${socket.id} disconnected`);
+      // TODO: add logic to remove team if needed
     });
   });
-  // Host Join
+
+  // Host joiner spil
   socket.on("host-join", ({ sessionId }) => {
     socket.join(sessionId);
     console.log(`Host joined session ${sessionId}`);
   });
-  // Start Game
+
+  // Start spillet og send første opgave til hvert hold
   socket.on("start-game", async ({ sessionId, selectedTaskIds }) => {
     try {
-      const session = sessions[sessionId];
-      if (!session) {
-        socket.emit("error", "Ugyldig session");
-        return;
+      const tasks = await Task.find({ _id: { $in: selectedTaskIds } }).lean();
+      if (!tasks.length) return socket.emit("error", "Ingen opgaver valgt");
+
+      game.createSession(sessionId, tasks);
+
+      const session = game.getSession(sessionId);
+      console.log("🔍 TEAMS I SESSION:", session.teams);
+      for (const teamName in session.teams) {
+        const socketId = session.teams[teamName].socketId;
+        const firstTask = game.assignTaskQueue(sessionId, teamName, tasks);
+        console.log(`📤 Sender receive-task til ${teamName} via socket ${socketId}`);
+
+        io.to(socketId).emit("receive-task", firstTask);
       }
 
-      const tasks = await Task.find({
-        _id: { $in: selectedTaskIds },
-      }).lean();
-
-      if (tasks.length === 0) {
-        socket.emit("error", "Ingen opgaver valgt");
-        return;
-      }
-
-      for (const [teamName, teamData] of Object.entries(sessions[sessionId])) {
-        const randomTask = tasks[Math.floor(Math.random() * tasks.length)];
-        console.log(`randomTask for team ${teamName}:`, randomTask);
-
-        const socketId = teamData.socketId;
-        teamData.task = randomTask;
-        teamData.startTime = Date.now();
-        teamData.duration = randomTask.Tid * 60;
-
-        io.to(socketId).emit("receive-task", randomTask);
-      }
-
-      console.log(
-        `Spillet er startet i session ${sessionId} med ${tasks.length} opgaver`
-      );
+      console.log(`Spil startet for session ${sessionId}`);
     } catch (err) {
       console.error("Fejl i start-game:", err);
       socket.emit("error", "Kunne ikke starte spillet");
     }
   });
-  // Next Task
-  socket.on("next-task", async ({ sessionId, teamName }) => {
-    const session = sessions[sessionId];
-    if (!session || !session[teamName]) return;
 
-    const teamData = session[teamName];
-    const socketId = teamData.socketId;
+  // Næste opgave
+  socket.on("next-task", ({ sessionId, teamName }) => {
+    const session = game.getSession(sessionId);
+    if (!session) return;
 
-    try {
-      const assignedTaskIds = Object.values(session)
-        .map((team) => team.task?._id)
-        .filter((id) => id !== undefined);
+    const nextTask = game.getNextTask(sessionId, teamName);
+    const socketId = session.teams[teamName]?.socketId;
+    if (!socketId) return;
 
-      const tasks = await Task.find({
-        _id: { $nin: assignedTaskIds },
-      }).lean();
-
-      if (tasks.length === 0) {
-        socket.emit("error", "No remaining tasks available");
-        return;
-      }
-
-      let randomTask;
-      do {
-        randomTask = tasks[Math.floor(Math.random() * tasks.length)];
-      } while (randomTask._id.equals(teamData.task?._id));
-
-      console.log("randomTask for team:", randomTask);
-
-      teamData.task = randomTask;
-      teamData.startTime = Date.now();
-      teamData.duration = randomTask.Tid * 60;
-
-      console.log(`Emitting task to :${teamName}`, randomTask);
-      io.to(socketId).emit("receive-task", randomTask);
-      io.to(sessionId).emit("team-update", session);
-    } catch (err) {
-      console.error("Error in next-task:", err);
-      socket.emit("error", "Could not fetch next task");
+    if (nextTask) {
+      io.to(socketId).emit("receive-task", nextTask);
+    } else {
+      io.to(socketId).emit("no-more-tasks");
     }
   });
-  // Get Session Status
+
+  // Scoreboard-forespørgsel
   socket.on("get-session-status", ({ sessionId }) => {
-    const session = sessions[sessionId];
-    if (!session) {
-      socket.emit("error", "Session ikke fundet");
-      return;
-    }
+    const session = game.getSession(sessionId);
+    if (!session) return socket.emit("error", "Session ikke fundet");
 
     const scoreboard = {};
-
-    for (const [teamName, teamData] of Object.entries(session)) {
-      let remaining = 0;
-
-      if (teamData.startTime && teamData.duration) {
-        const elapsed = Math.floor((Date.now() - teamData.startTime) / 1000);
-        remaining = Math.max(teamData.duration - elapsed, 0);
-      }
+    for (const [teamName, queueData] of Object.entries(session.taskQueues)) {
+      const task = queueData.queue[queueData.index];
+      const time = queueData.startTime
+        ? Math.max(
+          (queueData.duration || 0) -
+          Math.floor((Date.now() - queueData.startTime) / 1000),
+          0
+        )
+        : 0;
 
       scoreboard[teamName] = {
-        task: teamData.task,
-        time: remaining,
+        task,
+        time,
       };
     }
 
