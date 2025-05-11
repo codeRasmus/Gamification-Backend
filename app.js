@@ -47,7 +47,9 @@ io.on("connection", (socket) => {
     socket.join(teamName);
     socket.emit("joined", { teamName, sessionId });
 
-    console.log(`✅ Team ${teamName} joined session ${sessionId} via socket ${socket.id}`);
+    console.log(
+      `✅ Team ${teamName} joined session ${sessionId} via socket ${socket.id}`
+    );
     io.to(sessionId).emit("team-update", game.getSession(sessionId).teams);
 
     socket.on("disconnect", () => {
@@ -75,7 +77,9 @@ io.on("connection", (socket) => {
       for (const teamName in session.teams) {
         const socketId = session.teams[teamName].socketId;
         const firstTask = game.assignTaskQueue(sessionId, teamName, tasks);
-        console.log(`📤 Sender receive-task til ${teamName} via socket ${socketId}`);
+        console.log(
+          `📤 Sender receive-task til ${teamName} via socket ${socketId}`
+        );
 
         io.to(socketId).emit("receive-task", firstTask);
       }
@@ -113,10 +117,10 @@ io.on("connection", (socket) => {
       const task = queueData.queue[queueData.index];
       const time = queueData.startTime
         ? Math.max(
-          (queueData.duration || 0) -
-          Math.floor((Date.now() - queueData.startTime) / 1000),
-          0
-        )
+            (queueData.duration || 0) -
+              Math.floor((Date.now() - queueData.startTime) / 1000),
+            0
+          )
         : 0;
 
       scoreboard[teamName] = {
