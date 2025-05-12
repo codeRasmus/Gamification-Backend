@@ -14,6 +14,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socket.init(server);
 
+const hostSessions = new Set();
+
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -38,6 +40,10 @@ io.on("connection", (socket) => {
       return socket.emit("error", "Ugyldigt holdnavn");
     }
 
+    if (!hostSessions.has(sessionId)) {
+      return socket.emit("session-not-found");
+    }
+
     const joined = game.joinTeam(sessionId, teamName, socket.id);
     if (!joined) {
       return socket.emit("error", `Holdet ${teamName} er allerede optaget.`);
@@ -47,21 +53,16 @@ io.on("connection", (socket) => {
     socket.join(teamName);
     socket.emit("joined", { teamName, sessionId });
 
-    console.log(
-      `✅ Team ${teamName} joined session ${sessionId} via socket ${socket.id}`
-    );
+    console.log(`✅ Team ${teamName} joined session ${sessionId}`);
     io.to(sessionId).emit("team-update", game.getSession(sessionId).teams);
-
-    socket.on("disconnect", () => {
-      console.log(`Socket ${socket.id} disconnected`);
-      // TODO: add logic to remove team if needed
-    });
   });
 
   // Host joiner spil
   socket.on("host-join", ({ sessionId }) => {
     socket.join(sessionId);
+    hostSessions.add(sessionId);
     console.log(`Host joined session ${sessionId}`);
+    console.log(hostSessions);
   });
 
   // Start spillet og send første opgave til hvert hold
@@ -77,9 +78,7 @@ io.on("connection", (socket) => {
       for (const teamName in session.teams) {
         const socketId = session.teams[teamName].socketId;
         const firstTask = game.assignTaskQueue(sessionId, teamName, tasks);
-        console.log(
-          `📤 Sender receive-task til ${teamName} via socket ${socketId}`
-        );
+        console.log(`📤 Sender receive-task til ${teamName} via socket ${socketId}`);
 
         io.to(socketId).emit("receive-task", firstTask);
       }
@@ -116,11 +115,7 @@ io.on("connection", (socket) => {
     for (const [teamName, queueData] of Object.entries(session.taskQueues)) {
       const task = queueData.queue[queueData.index];
       const time = queueData.startTime
-        ? Math.max(
-            (queueData.duration || 0) -
-              Math.floor((Date.now() - queueData.startTime) / 1000),
-            0
-          )
+        ? Math.max((queueData.duration || 0) - Math.floor((Date.now() - queueData.startTime) / 1000), 0)
         : 0;
 
       scoreboard[teamName] = {
@@ -130,6 +125,23 @@ io.on("connection", (socket) => {
     }
 
     socket.emit("session-status", scoreboard);
+  });
+  socket.on("validate-session", ({ sessionId }) => {
+    if (!hostSessions.has(sessionId)) {
+      return socket.emit("session-not-found");
+    }
+
+    socket.emit("session-valid");
+  });
+  socket.on("disconnect", () => {
+    // Hvis det er en host, fjern sessionen
+    for (const sessionId of hostSessions) {
+      const session = game.getSession(sessionId);
+      if (session && Object.values(session.teams).some((team) => team.socketId === socket.id)) {
+        console.log(`Host eller team forlod session ${sessionId}`);
+        // Hvis du har tracking på hostens socketId separat, kan du gøre det mere præcist
+      }
+    }
   });
 });
 
