@@ -11,8 +11,7 @@ function createSession(sessionId, taskList) {
 }
 
 function joinTeam(sessionId, teamName, socketId) {
-  if (!sessions[sessionId])
-    sessions[sessionId] = { tasks: [], teams: {}, taskQueues: {} };
+  if (!sessions[sessionId]) sessions[sessionId] = { tasks: [], teams: {}, taskQueues: {} };
 
   const session = sessions[sessionId];
 
@@ -49,12 +48,13 @@ function getNextTask(sessionId, teamName) {
     queueData.duration = (nextTask.Tid || 5) * 60;
   }
 
-  console.log(
-    `➡️  Næste opgave til ${teamName}:`,
-    nextTask?.Spørgsmål || "Ingen flere"
-  );
+  console.log(`➡️  Næste opgave til ${teamName}:`, nextTask?.Spørgsmål || "Ingen flere");
 
   return nextTask || null;
+}
+
+function removeSession(sessionId) {
+  delete sessions[sessionId];
 }
 
 function getAllSessions() {
@@ -72,4 +72,5 @@ module.exports = {
   getNextTask,
   getAllSessions,
   getSession,
+  removeSession,
 };

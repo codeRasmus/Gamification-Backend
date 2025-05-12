@@ -15,6 +15,7 @@ const server = http.createServer(app);
 const io = socket.init(server);
 
 const hostSessions = new Set();
+const hostSocketMap = new Map();
 
 app.use(
   cors({
@@ -61,6 +62,7 @@ io.on("connection", (socket) => {
   socket.on("host-join", ({ sessionId }) => {
     socket.join(sessionId);
     hostSessions.add(sessionId);
+    hostSocketMap.set(sessionId, socket.id); // 👈 GEM hostens socket.id
     console.log(`Host joined session ${sessionId}`);
     console.log(hostSessions);
   });
@@ -134,12 +136,13 @@ io.on("connection", (socket) => {
     socket.emit("session-valid");
   });
   socket.on("disconnect", () => {
-    // Hvis det er en host, fjern sessionen
-    for (const sessionId of hostSessions) {
-      const session = game.getSession(sessionId);
-      if (session && Object.values(session.teams).some((team) => team.socketId === socket.id)) {
-        console.log(`Host eller team forlod session ${sessionId}`);
-        // Hvis du har tracking på hostens socketId separat, kan du gøre det mere præcist
+    for (const [sessionId, hostSocketId] of hostSocketMap.entries()) {
+      if (hostSocketId === socket.id) {
+        console.log(`❌ Host forlod session ${sessionId}. Fjerner session.`);
+        hostSessions.delete(sessionId);
+        hostSocketMap.delete(sessionId);
+        game.removeSession(sessionId);
+        console.log(hostSessions);
       }
     }
   });
