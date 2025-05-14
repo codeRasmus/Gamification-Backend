@@ -1,17 +1,18 @@
-const sessions = {}; // intern hukommelse
+const sessions = {};
 
 function createSession(sessionId, taskList) {
   const existingTeams = sessions[sessionId]?.teams || {};
 
   sessions[sessionId] = {
     tasks: taskList,
-    teams: existingTeams, // ✅ behold tilsluttede hold
+    teams: existingTeams,
     taskQueues: {},
   };
 }
 
 function joinTeam(sessionId, teamName, socketId) {
-  if (!sessions[sessionId]) sessions[sessionId] = { tasks: [], teams: {}, taskQueues: {} };
+  if (!sessions[sessionId])
+    sessions[sessionId] = { tasks: [], teams: {}, taskQueues: {} };
 
   const session = sessions[sessionId];
 
@@ -47,8 +48,6 @@ function getNextTask(sessionId, teamName) {
     queueData.startTime = Date.now();
     queueData.duration = (nextTask.Tid || 5) * 60;
   }
-
-  console.log(`➡️  Næste opgave til ${teamName}:`, nextTask?.Spørgsmål || "Ingen flere");
 
   return nextTask || null;
 }

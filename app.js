@@ -33,9 +33,6 @@ app.use("/api/submission", submissionRoutes);
 const VALID_TEAMS = ["Alpha", "Beta", "Delta", "Sigma", "Omega"];
 
 io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id);
-
-  // Join team
   socket.on("join-team", ({ teamName, sessionId }) => {
     if (!VALID_TEAMS.includes(teamName)) {
       return socket.emit("error", "Ugyldigt holdnavn");
@@ -53,18 +50,13 @@ io.on("connection", (socket) => {
     socket.join(sessionId);
     socket.join(teamName);
     socket.emit("joined", { teamName, sessionId });
-
-    console.log(`✅ Team ${teamName} joined session ${sessionId}`);
     io.to(sessionId).emit("team-update", game.getSession(sessionId).teams);
   });
 
-  // Host joiner spil
   socket.on("host-join", ({ sessionId }) => {
     socket.join(sessionId);
     hostSessions.add(sessionId);
-    hostSocketMap.set(sessionId, socket.id); // 👈 GEM hostens socket.id
-    console.log(`Host joined session ${sessionId}`);
-    console.log(hostSessions);
+    hostSocketMap.set(sessionId, socket.id);
   });
 
   // Start spillet og send første opgave til hvert hold
@@ -76,16 +68,13 @@ io.on("connection", (socket) => {
       game.createSession(sessionId, tasks);
 
       const session = game.getSession(sessionId);
-      console.log("🔍 TEAMS I SESSION:", session.teams);
+
       for (const teamName in session.teams) {
         const socketId = session.teams[teamName].socketId;
         const firstTask = game.assignTaskQueue(sessionId, teamName, tasks);
-        console.log(`📤 Sender receive-task til ${teamName} via socket ${socketId}`);
 
         io.to(socketId).emit("receive-task", firstTask);
       }
-
-      console.log(`Spil startet for session ${sessionId}`);
     } catch (err) {
       console.error("Fejl i start-game:", err);
       socket.emit("error", "Kunne ikke starte spillet");
@@ -117,7 +106,11 @@ io.on("connection", (socket) => {
     for (const [teamName, queueData] of Object.entries(session.taskQueues)) {
       const task = queueData.queue[queueData.index];
       const time = queueData.startTime
-        ? Math.max((queueData.duration || 0) - Math.floor((Date.now() - queueData.startTime) / 1000), 0)
+        ? Math.max(
+            (queueData.duration || 0) -
+              Math.floor((Date.now() - queueData.startTime) / 1000),
+            0
+          )
         : 0;
 
       scoreboard[teamName] = {
@@ -138,11 +131,9 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     for (const [sessionId, hostSocketId] of hostSocketMap.entries()) {
       if (hostSocketId === socket.id) {
-        console.log(`❌ Host forlod session ${sessionId}. Fjerner session.`);
         hostSessions.delete(sessionId);
         hostSocketMap.delete(sessionId);
         game.removeSession(sessionId);
-        console.log(hostSessions);
       }
     }
   });
@@ -151,7 +142,6 @@ io.on("connection", (socket) => {
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("MongoDB connected");
     server.listen(5500, () => {
       console.log("Server running on http://localhost:5500");
     });

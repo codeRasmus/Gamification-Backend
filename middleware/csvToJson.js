@@ -1,9 +1,6 @@
 async function csvToJson(req, res, next) {
   try {
-    console.log("csvToJson middleware activated");
-    console.log("req.body:", req.body); // Debugging log
-
-    const csvText = req.body.toString(); // This assumes the body is a string
+    const csvText = req.body.toString();
     const lines = csvText.trim().split("\n");
 
     if (lines.length < 2) {
@@ -33,7 +30,6 @@ async function csvToJson(req, res, next) {
       data.push(entry);
     });
 
-    console.log("Parsed CSV data:", data); // Debugging log
     req.jsonData = data;
     next();
   } catch (err) {
@@ -46,7 +42,6 @@ module.exports = csvToJson;
 
 async function csvToJson(req, res, next) {
   try {
-    console.log("csvtojson er aktiveret");
     const csvText = req.body.toString();
     const lines = csvText.trim().split("\n");
 

@@ -64,8 +64,7 @@ exports.getAllAdmins = async (req, res) => {
 
 exports.startGame = async (req, res) => {
   try {
-    console.log("Starting game...");
-    const io = getIO(); // get socket instance
+    const io = getIO();
     io.emit("game_start", {
       message: "Game is starting! Please go to the game page.",
     });

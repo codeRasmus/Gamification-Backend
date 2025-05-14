@@ -11,7 +11,6 @@ exports.getTaskById = async (req, res) => {
 };
 
 exports.createTask = async (req, res) => {
-  console.log(req.body);
   const task = new Task(req.body);
   await task.save();
   res.status(201).json(task);
@@ -20,7 +19,6 @@ exports.createTask = async (req, res) => {
 exports.uploadTasks = async (req, res) => {
   try {
     const tasks = req.csvData;
-    console.log("Parsed tasks:", tasks); // Debugging log
 
     if (
       !Array.isArray(tasks) ||
