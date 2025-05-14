@@ -1,3 +1,5 @@
+// Ikke en del af programmet, men brugt til at poste en dummy opgavebesvarelser
+
 const http = require("http");
 
 const data = JSON.stringify({

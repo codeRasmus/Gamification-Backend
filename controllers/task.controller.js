@@ -1,21 +1,25 @@
 const Task = require("../models/task.model");
 
+// Controller til at hente alle opgaver
 exports.getAllTasks = async (req, res) => {
   const tasks = await Task.find();
   res.json(tasks);
 };
 
+// Controller til at hente en opgave baseret på ID
 exports.getTaskById = async (req, res) => {
   const task = await Task.findById(req.params.id);
   res.json(task);
 };
 
+// Controller til at oprette en ny opgave
 exports.createTask = async (req, res) => {
   const task = new Task(req.body);
   await task.save();
   res.status(201).json(task);
 };
 
+// Controller til at oprette ny opgavebank baseret på CSV -> JSON
 exports.uploadTasks = async (req, res) => {
   try {
     const tasks = req.csvData;
@@ -46,6 +50,7 @@ exports.uploadTasks = async (req, res) => {
   }
 };
 
+// Controller til at opgave specifik opgave baseret på ID
 exports.updateTask = async (req, res) => {
   const { id } = req.params; // Get the ID from the URL
   const updates = { ...req.body }; // Copy the request body to handle it more explicitly
@@ -70,11 +75,13 @@ exports.updateTask = async (req, res) => {
   }
 };
 
+// Controller til at slette en opgave baseret på ID
 exports.deleteTask = async (req, res) => {
   await Task.findByIdAndDelete(req.params.id);
   res.status(204).send();
 };
 
+// Controller til at slette alle opgaver
 exports.deleteAllTasks = async (req, res) => {
   try {
     await Task.deleteMany({});

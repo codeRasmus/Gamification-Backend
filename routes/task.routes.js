@@ -4,6 +4,7 @@ const router = express.Router();
 const taskController = require("../controllers/task.controller");
 const csvToJson = require("../middleware/csvToJson");
 
+// Routes brugt opgaveoprettelse (både batch og individuel), sletning og opdatering
 router.get("/", taskController.getAllTasks);
 router.get("/:id", taskController.getTaskById);
 router.post("/", taskController.createTask);

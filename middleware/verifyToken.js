@@ -1,11 +1,15 @@
 const jwt = require("jsonwebtoken");
 
+// Middleware til at verificere JWT token
+// Bruges kun af Admin-siden
 function verifyToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    return res.status(401).json({ message: "Access Denied: No Token Provided" });
+    return res
+      .status(401)
+      .json({ message: "Access Denied: No Token Provided" });
   }
 
   try {

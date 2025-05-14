@@ -1,9 +1,11 @@
+// Ikke en del af programmet, men brugt til at slette samtlige opgavebesvarelser
+
 const http = require("http");
 
 const options = {
   hostname: "localhost",
-  port: 5500, // Ensure this matches the port you're using for the server
-  path: "/api/submission", // The path to your route for deleting submissions
+  port: 5500,
+  path: "/api/submission",
   method: "DELETE",
   headers: {
     "Content-Type": "application/json",

@@ -1,5 +1,6 @@
 const Submission = require("../models/submission.model");
 
+// Controller til at håndtere indsendelse af samlet besvarelse til MongoDB
 exports.createSubmission = async (req, res) => {
   try {
     const submission = new Submission(req.body);
@@ -10,6 +11,7 @@ exports.createSubmission = async (req, res) => {
   }
 };
 
+// Controller til at hente ALLE besvarelser fra MongoDB (ikke en del af programmet)
 exports.getAllSubmissions = async (req, res) => {
   try {
     const submissions = await Submission.find().populate("answers.taskId");
@@ -19,6 +21,7 @@ exports.getAllSubmissions = async (req, res) => {
   }
 };
 
+// Controller til at clear ALLE besvarelser fra MongoDB (ikke en del af programmet)
 exports.deleteAllSubmissions = async (req, res) => {
   try {
     const result = await Submission.deleteMany({});

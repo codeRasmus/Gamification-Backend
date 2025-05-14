@@ -4,6 +4,9 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const { getIO } = require("../socket");
 
+// Controller til at registrere ny Admin
+// Tjekker om Admin allerede eksisterer
+// Hvis ikke hashes password og ny admin gemmes
 exports.register = async (req, res) => {
   const { username, password } = req.body;
 
@@ -26,6 +29,9 @@ exports.register = async (req, res) => {
   }
 };
 
+// Controller til håndtering af Login
+// Tjekker password og username med bcrypt
+// Sætter JWT token
 exports.login = async (req, res) => {
   const { username, password } = req.body;
 
@@ -53,6 +59,7 @@ exports.login = async (req, res) => {
   }
 };
 
+// Controller til at hente samtlige admins
 exports.getAllAdmins = async (req, res) => {
   try {
     const admins = await Admin.find().select("-passwordHash");
@@ -62,6 +69,8 @@ exports.getAllAdmins = async (req, res) => {
   }
 };
 
+// Controller til at starte spillet
+// Sender emit med game-start til alle spillere via Socket.io
 exports.startGame = async (req, res) => {
   try {
     const io = getIO();

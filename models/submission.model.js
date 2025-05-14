@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+// Mongoose schema for indsendelse af opgavebesvarelser
 const answerSchema = new mongoose.Schema({
   taskId: {
     type: mongoose.Schema.Types.ObjectId,

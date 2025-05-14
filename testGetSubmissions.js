@@ -1,3 +1,5 @@
+// Ikke en del af programmet, men brugt til at hente samtlige opgavebesvarelser
+
 const http = require("http");
 
 const options = {

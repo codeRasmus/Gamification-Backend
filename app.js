@@ -1,3 +1,4 @@
+// Import og opsætning
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -10,13 +11,17 @@ const Task = require("./models/task.model");
 const game = require("./utils/gameSessionManager");
 require("dotenv").config();
 
+// Server og Socket.io initialisering
 const app = express();
 const server = http.createServer(app);
 const io = socket.init(server);
 
+// In-memory data
 const hostSessions = new Set();
 const hostSocketMap = new Map();
+const VALID_TEAMS = ["Alpha", "Beta", "Delta", "Sigma", "Omega"];
 
+// Middleware
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -26,13 +31,15 @@ app.use(
 app.use(express.json());
 app.use(express.text({ type: "text/csv" }));
 app.use(express.urlencoded({ extended: true }));
+
+// Routes
 app.use("/api/tasks", taskRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/submission", submissionRoutes);
 
-const VALID_TEAMS = ["Alpha", "Beta", "Delta", "Sigma", "Omega"];
-
+// Socket.io eventhåndtering
 io.on("connection", (socket) => {
+  // Event til håndtering når et Team tilslutter sig
   socket.on("join-team", ({ teamName, sessionId }) => {
     if (!VALID_TEAMS.includes(teamName)) {
       return socket.emit("error", "Ugyldigt holdnavn");
@@ -53,13 +60,14 @@ io.on("connection", (socket) => {
     io.to(sessionId).emit("team-update", game.getSession(sessionId).teams);
   });
 
+  // Event til når Game Master åbner en spillobby
   socket.on("host-join", ({ sessionId }) => {
     socket.join(sessionId);
     hostSessions.add(sessionId);
     hostSocketMap.set(sessionId, socket.id);
   });
 
-  // Start spillet og send første opgave til hvert hold
+  // Event til når Game Master starter spillet
   socket.on("start-game", async ({ sessionId, selectedTaskIds }) => {
     try {
       const tasks = await Task.find({ _id: { $in: selectedTaskIds } }).lean();
@@ -81,7 +89,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Næste opgave
+  // Event når brugeren har besvaret et spørgsmål og skal forespørge det næste
   socket.on("next-task", ({ sessionId, teamName }) => {
     const session = game.getSession(sessionId);
     if (!session) return;
@@ -97,7 +105,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Scoreboard-forespørgsel
+  // Event til når Game Master skal overvåge en session (sker hvert sekund)
   socket.on("get-session-status", ({ sessionId }) => {
     const session = game.getSession(sessionId);
     if (!session) return socket.emit("error", "Session ikke fundet");
@@ -121,13 +129,16 @@ io.on("connection", (socket) => {
 
     socket.emit("session-status", scoreboard);
   });
+
+  // Event til at håndtere om brugerens sessionskode er gylding
   socket.on("validate-session", ({ sessionId }) => {
     if (!hostSessions.has(sessionId)) {
       return socket.emit("session-not-found");
     }
-
     socket.emit("session-valid");
   });
+
+  // Event til at håndtere når en bruger disconnecter fra spillet
   socket.on("disconnect", () => {
     for (const [sessionId, hostSocketId] of hostSocketMap.entries()) {
       if (hostSocketId === socket.id) {
@@ -139,6 +150,7 @@ io.on("connection", (socket) => {
   });
 });
 
+// Opsætning af MongoDB forbindelse
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {

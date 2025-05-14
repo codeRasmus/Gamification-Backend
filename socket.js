@@ -1,5 +1,6 @@
 let io;
 
+// Socket modul til at sørge for at der kun et socket.io instance
 module.exports = {
   init: (server) => {
     const socketIo = require("socket.io");

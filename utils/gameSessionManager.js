@@ -1,5 +1,6 @@
 const sessions = {};
 
+// Funktion til at oprette en session
 function createSession(sessionId, taskList) {
   const existingTeams = sessions[sessionId]?.teams || {};
 
@@ -10,6 +11,7 @@ function createSession(sessionId, taskList) {
   };
 }
 
+// Funktion til at tilslutte et team til en session
 function joinTeam(sessionId, teamName, socketId) {
   if (!sessions[sessionId])
     sessions[sessionId] = { tasks: [], teams: {}, taskQueues: {} };
@@ -22,6 +24,7 @@ function joinTeam(sessionId, teamName, socketId) {
   return true;
 }
 
+// Funktion til at tildele en randomiseret opgavekø til et team
 function assignTaskQueue(sessionId, teamName, taskList) {
   const shuffled = [...taskList].sort(() => Math.random() - 0.5);
   const firstTask = shuffled[0];
@@ -37,6 +40,7 @@ function assignTaskQueue(sessionId, teamName, taskList) {
   return firstTask;
 }
 
+// Funktion til at tildele den næste opgave til et team
 function getNextTask(sessionId, teamName) {
   const queueData = sessions[sessionId]?.taskQueues[teamName];
   if (!queueData) return null;
@@ -52,14 +56,17 @@ function getNextTask(sessionId, teamName) {
   return nextTask || null;
 }
 
+// Funktion til slette session når spillet er færdigt
 function removeSession(sessionId) {
   delete sessions[sessionId];
 }
 
+// Funktion til at hente alle sessioner
 function getAllSessions() {
   return sessions;
 }
 
+// Funktion til at overvåge session
 function getSession(sessionId) {
   return sessions[sessionId];
 }

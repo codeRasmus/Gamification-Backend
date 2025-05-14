@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+// Mongoose schema for opgaveoprettelse
 const taskSchema = new mongoose.Schema({
   Spørgsmål: { type: String, required: true },
   Kategori: { type: String, required: true },
