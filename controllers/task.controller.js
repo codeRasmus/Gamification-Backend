@@ -22,7 +22,7 @@ exports.createTask = async (req, res) => {
 // Controller til at oprette ny opgavebank baseret på CSV -> JSON
 exports.uploadTasks = async (req, res) => {
   try {
-    const tasks = req.csvData;
+    const tasks = req.jsonData;
 
     if (
       !Array.isArray(tasks) ||
